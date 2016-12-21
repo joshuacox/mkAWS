@@ -1,2 +1,4 @@
 AMI_ID
+SG_ID
 SSH_KEY
+*.pem
