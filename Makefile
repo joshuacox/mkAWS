@@ -135,12 +135,14 @@ clean:
 	-rm listinstances
 
 agentList:
+	$(eval AMI_ID := $(shell cat AMI_ID))
 	$(eval WORKER_SIZE := $(shell cat WORKER_SIZE))
-	cat workingList|grep $(WORKER_SIZE) > agentList
+	cat workingList | grep $(AMI_ID) | grep $(WORKER_SIZE) > agentList
 
 serverList:
+	$(eval AMI_ID := $(shell cat AMI_ID))
 	$(eval SERVER_SIZE := $(shell cat SERVER_SIZE))
-	cat workingList|grep $(SERVER_SIZE) > serverList
+	cat workingList | grep $(AMI_ID) | grep $(SERVER_SIZE) > serverList
 
 agentcmdHelp:
 	@echo 'Now visit your rancher server (choose your environment if other than default Cattle) and click on addhost, where you will get the AGENT_CMD'
