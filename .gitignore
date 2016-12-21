@@ -1,4 +1,8 @@
 AMI_ID
 SG_ID
-SSH_KEY
+AGENT_CMD
+SSH_*
+WORKER_COUNT
 *.pem
+listinstances
+workingList
