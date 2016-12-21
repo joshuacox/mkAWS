@@ -35,7 +35,12 @@ SSH_KEY:
 
 SSH_PORT:
 	@while [ -z "$$SSH_PORT" ]; do \
-		read -r -p "Enter the path to the SSH_PORT you wish to associate with this cluster [SSH_PORT]: " SSH_PORT; echo "$$SSH_PORT">>SSH_PORT; cat SSH_PORT; \
+		read -r -p "Enter the the SSH_PORT you wish to associate with this cluster [SSH_PORT]: " SSH_PORT; echo "$$SSH_PORT">>SSH_PORT; cat SSH_PORT; \
+	done ;
+
+AGENT_CMD:
+	@while [ -z "$$AGENT_CMD" ]; do \
+		read -r -p "Enter the AGENT_CMD you wish to associate with this cluster [AGENT_CMD]: " AGENT_CMD; echo "$$AGENT_CMD">>AGENT_CMD; cat AGENT_CMD; \
 	done ;
 
 WORKER_COUNT:
@@ -68,4 +73,16 @@ keyscan: listinstances workingList
 		echo "ssh-keyscan -p$(SSH_PORT) $$PUBLIC_IP >>~/.ssh/known_hosts"; \
 		done < workingList > $(TMP)/keyscan
 	-bash $(TMP)/keyscan
+	-@rm -Rf $(TMP)
+
+agents:
+	$(eval TMP := $(shell mktemp -d --suffix=DOCKERTMP))
+	$(eval SSH_PORT := $(shell cat SSH_PORT))
+	$(eval AGENT_CMD := $(shell cat AGENT_CMD))
+	while read INSTANCE_ID IMAGE_ID PRIVATE_IP PUBLIC_IP HOSTNAME INSTANCE_TYPE KEY_NAME ; \
+		do \
+		echo "ssh -i ./$$KEY_NAME.pem -p$(SSH_PORT) rancher@$$PUBLIC_IP \"$(AGENT_CMD)\""; \
+		done < workingList > $(TMP)/agentbootstrap 
+	-@cat $(TMP)/agentbootstrap
+	-/usr/bin/time parallel  --jobs 25 -- < $(TMP)/agentbootstrap
 	-@rm -Rf $(TMP)
