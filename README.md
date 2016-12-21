@@ -2,6 +2,9 @@
 
 Make an AWS cluster PDQ
 
+[video](https://youtu.be/kp2F6SB-3bI):
+<iframe width="560" height="315" src="https://www.youtube.com/embed/kp2F6SB-3bI" frameborder="0" allowfullscreen></iframe>
+
 ### Install
 
 ```

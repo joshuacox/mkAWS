@@ -150,3 +150,9 @@ agentcmdHelp:
 askWaitForInitFinish: SHELL:=/bin/bash
 askWaitForInitFinish:
 	read -p "Please wait for the VMs to initialize in AWS and then hit any key to continue, or make dockers to continue from this point to retry " -n 1 -r
+
+regionsList:
+	aws ec2 describe-regions>regionsList
+
+listRegions:
+	jq -r '.Regions[] | " \(.RegionName)\t http://\(.Endpoint) " ' regionsList
