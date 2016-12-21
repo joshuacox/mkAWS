@@ -5,7 +5,7 @@ help:
 
 rancher: AMI_ID SG_ID SERVER_COUNT WORKER_COUNT SSH_KEY SSH_PORT SERVER_SIZE WORKER_SIZE rancherServer rancherAgent askWaitForInitFinish dockers
 	
-dockers: servers agents
+dockers: keyscan servers agents
 
 servers: serverDocker
 
@@ -134,12 +134,12 @@ clean:
 	-rm serverList
 	-rm listinstances
 
-agentList:
+agentList: workingList
 	$(eval AMI_ID := $(shell cat AMI_ID))
 	$(eval WORKER_SIZE := $(shell cat WORKER_SIZE))
 	cat workingList | grep $(AMI_ID) | grep $(WORKER_SIZE) > agentList
 
-serverList:
+serverList: workingList
 	$(eval AMI_ID := $(shell cat AMI_ID))
 	$(eval SERVER_SIZE := $(shell cat SERVER_SIZE))
 	cat workingList | grep $(AMI_ID) | grep $(SERVER_SIZE) > serverList
