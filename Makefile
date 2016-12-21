@@ -33,6 +33,11 @@ SSH_KEY:
 		read -r -p "Enter the path to the SSH_KEY you wish to associate with this cluster [SSH_KEY]: " SSH_KEY; echo "$$SSH_KEY">>SSH_KEY; cat SSH_KEY; \
 	done ;
 
+SSH_PORT:
+	@while [ -z "$$SSH_PORT" ]; do \
+		read -r -p "Enter the path to the SSH_PORT you wish to associate with this cluster [SSH_PORT]: " SSH_PORT; echo "$$SSH_PORT">>SSH_PORT; cat SSH_PORT; \
+	done ;
+
 WORKER_COUNT:
 	@while [ -z "$$WORKER_COUNT" ]; do \
 		read -r -p "Enter the WORKER_COUNT you wish to associate with this cluster [WORKER_COUNT]: " WORKER_COUNT; echo "$$WORKER_COUNT">>WORKER_COUNT; cat WORKER_COUNT; \
@@ -43,3 +48,24 @@ listinstances:
 
 workingList: listinstances
 	jq -r '.Reservations[] | .Instances[] | " \(.InstanceId) \(.ImageId) \(.PrivateIpAddress) \(.PublicIpAddress) \(.PublicDnsName) \(.InstanceType) \(.KeyName) " ' listinstances > workingList
+
+testrancher: listinstances workingList
+	$(eval TMP := $(shell mktemp -d --suffix=DOCKERTMP))
+	$(eval SSH_PORT := $(shell cat SSH_PORT))
+	while read INSTANCE_ID IMAGE_ID PRIVATE_IP PUBLIC_IP HOSTNAME INSTANCE_TYPE KEY_NAME ; \
+		do \
+		echo "ssh -i ./$$KEY_NAME.pem -p$(SSH_PORT) rancher@$$PUBLIC_IP 'uname -a ;docker ps'"; \
+		done < workingList > $(TMP)/tester 
+	-@cat $(TMP)/tester
+	-/usr/bin/time parallel  --jobs 25 -- < $(TMP)/tester
+	-@rm -Rf $(TMP)
+
+keyscan: listinstances workingList
+	$(eval TMP := $(shell mktemp -d --suffix=DOCKERTMP))
+	$(eval SSH_PORT := $(shell cat SSH_PORT))
+	while read INSTANCE_ID IMAGE_ID PRIVATE_IP PUBLIC_IP HOSTNAME INSTANCE_TYPE KEY_NAME ; \
+		do \
+		echo "ssh-keyscan -p$(SSH_PORT) $$PUBLIC_IP >>~/.ssh/known_hosts"; \
+		done < workingList > $(TMP)/keyscan
+	-bash $(TMP)/keyscan
+	-@rm -Rf $(TMP)
