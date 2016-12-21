@@ -2,6 +2,14 @@
 
 Make an AWS cluster PDQ
 
+### Install
+
+```
+make install
+```
+
+will use pip to install awscli and then incant `aws configure` which will prompt you for your AWS creds
+
 ### Usage
 
 ```

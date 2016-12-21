@@ -86,3 +86,8 @@ agents:
 	-@cat $(TMP)/agentbootstrap
 	-/usr/bin/time parallel  --jobs 25 -- < $(TMP)/agentbootstrap
 	-@rm -Rf $(TMP)
+
+install:
+	sudo pip install awscli
+	echo 'http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html'
+	aws configure
