@@ -133,6 +133,12 @@ clean:
 	-rm agentList
 	-rm serverList
 	-rm listinstances
+	-rm AGENT_CMD
+	-rm WORKER_COUNT
+	-rm WORKER_SIZE
+	-rm SERVER_COUNT
+	-rm SERVER_SIZE
+	-rm SSH_KEY
 
 agentList: workingList
 	$(eval AMI_ID := $(shell cat AMI_ID))
