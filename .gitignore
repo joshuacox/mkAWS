@@ -6,3 +6,5 @@ WORKER_COUNT
 *.pem
 listinstances
 workingList
+agentList
+serverList
