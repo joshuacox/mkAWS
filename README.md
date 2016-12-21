@@ -1,4 +1,4 @@
-#mkAWS
+# mkAWS
 
 Make an AWS cluster PDQ
 
