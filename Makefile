@@ -109,6 +109,7 @@ serverDocker: serverList
 	-/usr/bin/time parallel  --jobs 25 -- < $(TMP)/serverbootstrap
 	-@rm -Rf $(TMP)
 	@echo 'If you have multple servers be sure and configure them using the "High Availability" menu under admin in the rancher servers'
+	@echo 'Now is also the time to configure your environments if you would like to use kubernetes, Mesos, or Swarm instead of Cattle'
 
 agentsDocker: agentList
 	$(eval TMP := $(shell mktemp -d --suffix=DOCKERTMP))
@@ -142,7 +143,7 @@ serverList:
 	cat workingList|grep $(SERVER_SIZE) > serverList
 
 agentcmdHelp:
-	@echo 'Now visit your rancher server and click on addhost, where you will get the AGENT_CMD'
+	@echo 'Now visit your rancher server (choose your environment if other than default Cattle) and click on addhost, where you will get the AGENT_CMD'
 
 askWaitForInitFinish: SHELL:=/bin/bash
 askWaitForInitFinish:
