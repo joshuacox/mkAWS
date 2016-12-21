@@ -3,6 +3,9 @@ SG_ID
 AGENT_CMD
 SSH_*
 WORKER_COUNT
+SERVER_COUNT
+WORKER_SIZE
+SERVER_SIZE
 *.pem
 listinstances
 workingList
