@@ -37,3 +37,9 @@ WORKER_COUNT:
 	@while [ -z "$$WORKER_COUNT" ]; do \
 		read -r -p "Enter the WORKER_COUNT you wish to associate with this cluster [WORKER_COUNT]: " WORKER_COUNT; echo "$$WORKER_COUNT">>WORKER_COUNT; cat WORKER_COUNT; \
 	done ;
+
+listinstances:
+	aws ec2 describe-instances > listinstances
+
+workingList: listinstances
+	jq -r '.Reservations[] | .Instances[] | " \(.InstanceId) \(.ImageId) \(.PrivateIpAddress) \(.PublicIpAddress) \(.PublicDnsName) \(.InstanceType) \(.KeyName) " ' listinstances > workingList
