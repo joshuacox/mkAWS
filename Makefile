@@ -76,6 +76,8 @@ listinstances:
 workingList: listinstances
 	jq -r '.Reservations[] | .Instances[] | " \(.InstanceId) \(.ImageId) \(.PrivateIpAddress) \(.PublicIpAddress) \(.PublicDnsName) \(.InstanceType) \(.KeyName) " ' listinstances > workingList
 
+test: testrancher
+
 testrancher: listinstances workingList
 	$(eval TMP := $(shell mktemp -d --suffix=DOCKERTMP))
 	$(eval SSH_PORT := $(shell cat SSH_PORT))
