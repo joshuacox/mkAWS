@@ -19,7 +19,7 @@ will use pip to install awscli and then incant `aws configure` which will prompt
 make rancher
 ```
 
-You will be prompted for your AWS key and a few other questions, at the end you will have one master rancher server and a number of worker machines
+You will be prompted for your AWS key and a few other questions, at the end you will have one master rancher server and a number of agent machines
 
 you now have a small cluster of [Rancher](http://rancher.com/rancher/)
 

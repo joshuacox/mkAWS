@@ -3,7 +3,7 @@ all: help
 help:
 	-@echo "read the README.md for more"
 
-rancher: AMI_ID SG_ID SERVER_COUNT WORKER_COUNT SSH_KEY SSH_PORT SERVER_SIZE WORKER_SIZE rancherServer rancherAgent askWaitForInitFinish dockers
+rancher: AMI_ID SG_ID SERVER_COUNT AGENT_COUNT SSH_KEY SSH_PORT SERVER_SIZE AGENT_SIZE rancherServer rancherAgent askWaitForInitFinish dockers
 	
 dockers: keyscan servers agents
 
@@ -15,9 +15,9 @@ rancherAgent:
 	$(eval AMI_ID := $(shell cat AMI_ID))
 	$(eval SG_ID := $(shell cat SG_ID))
 	$(eval SSH_KEY := $(shell cat SSH_KEY))
-	$(eval WORKER_COUNT := $(shell cat WORKER_COUNT))
-	$(eval WORKER_SIZE := $(shell cat WORKER_SIZE))
-	aws ec2 run-instances --image-id $(AMI_ID) --count $(WORKER_COUNT) --instance-type $(WORKER_SIZE) --key-name $(SSH_KEY) --security-groups $(SG_ID)
+	$(eval AGENT_COUNT := $(shell cat AGENT_COUNT))
+	$(eval AGENT_SIZE := $(shell cat AGENT_SIZE))
+	aws ec2 run-instances --image-id $(AMI_ID) --count $(AGENT_COUNT) --instance-type $(AGENT_SIZE) --key-name $(SSH_KEY) --security-groups $(SG_ID)
 
 rancherServer:
 	$(eval AMI_ID := $(shell cat AMI_ID))
@@ -52,9 +52,9 @@ AGENT_CMD:
 		read -r -p "Enter the AGENT_CMD you wish to associate with this cluster [AGENT_CMD]: " AGENT_CMD; echo "$$AGENT_CMD">>AGENT_CMD; cat AGENT_CMD; \
 	done ;
 
-WORKER_COUNT:
-	@while [ -z "$$WORKER_COUNT" ]; do \
-		read -r -p "Enter the WORKER_COUNT you wish to associate with this cluster [WORKER_COUNT]: " WORKER_COUNT; echo "$$WORKER_COUNT">>WORKER_COUNT; cat WORKER_COUNT; \
+AGENT_COUNT:
+	@while [ -z "$$AGENT_COUNT" ]; do \
+		read -r -p "Enter the AGENT_COUNT you wish to associate with this cluster [AGENT_COUNT]: " AGENT_COUNT; echo "$$AGENT_COUNT">>AGENT_COUNT; cat AGENT_COUNT; \
 	done ;
 
 SERVER_COUNT:
@@ -66,15 +66,15 @@ SERVER_SIZE:
 	@echo 't2.small' > SERVER_SIZE
 	@echo 'edit SERVER_SIZE to the size of the rancher server you require (min 2G of ram [t2.small])'
 
-WORKER_SIZE:
-	@echo 't2.micro' > WORKER_SIZE
-	@echo 'edit WORKER_SIZE to the size of the rancher agent you require (min 512M of ram [t2.nano])'
+AGENT_SIZE:
+	@echo 't2.micro' > AGENT_SIZE
+	@echo 'edit AGENT_SIZE to the size of the rancher agent you require (min 512M of ram [t2.nano])'
 
 listinstances:
 	aws ec2 describe-instances > listinstances
 
 workingList: listinstances
-	jq -r '.Reservations[] | .Instances[] | " \(.InstanceId) \(.ImageId) \(.PrivateIpAddress) \(.PublicIpAddress) \(.PublicDnsName) \(.InstanceType) \(.KeyName) " ' listinstances > workingList
+	jq -r '.Reservations[] | .Instances[] | " \(.InstanceId) \(.ImageId) \(.PrivateIpAddress) \(.PublicIpAddress) \(.PublicDnsName) \(.InstanceType) \(.KeyName) " ' listinstances | grep -v null > workingList
 
 test: testrancher
 
@@ -94,9 +94,11 @@ keyscan: listinstances workingList
 	$(eval SSH_PORT := $(shell cat SSH_PORT))
 	while read INSTANCE_ID IMAGE_ID PRIVATE_IP PUBLIC_IP HOSTNAME INSTANCE_TYPE KEY_NAME ; \
 		do \
-		echo "ssh-keyscan -p$(SSH_PORT) $$PUBLIC_IP >>~/.ssh/known_hosts"; \
+		echo "ssh-keyscan -p$(SSH_PORT) $$PUBLIC_IP >> $(TMP)/known_hosts"; \
 		done < workingList > $(TMP)/keyscan
 	-bash $(TMP)/keyscan
+	cat ~/.ssh/known_hosts >> $(TMP)/known_hosts
+	cat $(TMP)/known_hosts | sort | uniq > ~/.ssh/known_hosts
 	-@rm -Rf $(TMP)
 
 serverDocker: serverList
@@ -136,16 +138,16 @@ clean:
 	-rm serverList
 	-rm listinstances
 	-rm AGENT_CMD
-	-rm WORKER_COUNT
-	-rm WORKER_SIZE
+	-rm AGENT_COUNT
+	-rm AGENT_SIZE
 	-rm SERVER_COUNT
 	-rm SERVER_SIZE
 	-rm SSH_KEY
 
 agentList: workingList
 	$(eval AMI_ID := $(shell cat AMI_ID))
-	$(eval WORKER_SIZE := $(shell cat WORKER_SIZE))
-	cat workingList | grep -v null | grep $(AMI_ID) | grep $(WORKER_SIZE) > agentList
+	$(eval AGENT_SIZE := $(shell cat AGENT_SIZE))
+	cat workingList | grep -v null | grep $(AMI_ID) | grep $(AGENT_SIZE) > agentList
 
 serverList: workingList
 	$(eval AMI_ID := $(shell cat AMI_ID))
