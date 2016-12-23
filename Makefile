@@ -133,16 +133,16 @@ install:
 	aws configure
 
 clean:
-	-rm workingList
-	-rm agentList
-	-rm serverList
-	-rm listinstances
-	-rm AGENT_CMD
-	-rm AGENT_COUNT
-	-rm AGENT_SIZE
-	-rm SERVER_COUNT
-	-rm SERVER_SIZE
-	-rm SSH_KEY
+	-@rm workingList 2>/dev/null ;true
+	-@rm agentList 2>/dev/null ;true
+	-@rm serverList 2>/dev/null ;true
+	-@rm listinstances 2>/dev/null ;true
+	-@rm AGENT_CMD 2>/dev/null ;true
+	-@rm AGENT_COUNT 2>/dev/null ;true
+	-@rm AGENT_SIZE 2>/dev/null ;true
+	-@rm SERVER_COUNT 2>/dev/null ;true
+	-@rm SERVER_SIZE 2>/dev/null ;true
+	-@rm SSH_KEY 2>/dev/null ;true
 
 agentList: workingList
 	$(eval AMI_ID := $(shell cat AMI_ID))
