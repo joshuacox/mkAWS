@@ -6,9 +6,9 @@ AGENT_COUNT
 SERVER_COUNT
 AGENT_SIZE
 SERVER_SIZE
+VOLUME_SIZE
+AWS_*
 *.pem
 listinstances
-workingList
-agentList
-serverList
-regionsList
+*list
+*List

@@ -3,7 +3,15 @@ all: help
 help:
 	-@echo "read the README.md for more"
 
-rancher: AMI_ID SG_ID SERVER_COUNT AGENT_COUNT SSH_KEY SSH_PORT SERVER_SIZE AGENT_SIZE rancherServer rancherAgent askWaitForInitFinish dockers
+reqs: agentreqs serverreqs
+
+agentreqs: AMI_ID SG_ID SSH_KEY SSH_PORT AGENT_SIZE AGENT_COUNT
+
+servereqs: SERVER_COUNT AMI_ID SG_ID SSH_KEY SSH_PORT SERVER_SIZE
+
+rancher: reqs rancherServer rancherAgent askWaitForInitFinish dockers
+
+agentcluster: agentreqs rancherAgent askWaitForInitFinish keyscan agents
 	
 dockers: keyscan servers agents
 
@@ -17,7 +25,8 @@ rancherAgent:
 	$(eval SSH_KEY := $(shell cat SSH_KEY))
 	$(eval AGENT_COUNT := $(shell cat AGENT_COUNT))
 	$(eval AGENT_SIZE := $(shell cat AGENT_SIZE))
-	aws ec2 run-instances --image-id $(AMI_ID) --count $(AGENT_COUNT) --instance-type $(AGENT_SIZE) --key-name $(SSH_KEY) --security-groups $(SG_ID)
+	$(eval VOLUME_SIZE := $(shell cat VOLUME_SIZE))
+	aws ec2 run-instances --image-id $(AMI_ID) --count $(AGENT_COUNT) --instance-type $(AGENT_SIZE) --key-name $(SSH_KEY) --security-groups $(SG_ID) >> agentslist
 
 rancherServer:
 	$(eval AMI_ID := $(shell cat AMI_ID))
@@ -25,7 +34,7 @@ rancherServer:
 	$(eval SSH_KEY := $(shell cat SSH_KEY))
 	$(eval SERVER_COUNT := $(shell cat SERVER_COUNT))
 	$(eval SERVER_SIZE := $(shell cat SERVER_SIZE))
-	aws ec2 run-instances --image-id $(AMI_ID) --count $(SERVER_COUNT) --instance-type $(SERVER_SIZE) --key-name $(SSH_KEY) --security-groups $(SG_ID)
+	aws ec2 run-instances --image-id $(AMI_ID) --count $(SERVER_COUNT) --instance-type $(SERVER_SIZE) --key-name $(SSH_KEY) --security-groups $(SG_ID) >> serverslist
 
 AMI_ID:
 	@while [ -z "$$AMI_ID" ]; do \
@@ -69,6 +78,11 @@ SERVER_SIZE:
 AGENT_SIZE:
 	@echo 't2.micro' > AGENT_SIZE
 	@echo 'edit AGENT_SIZE to the size of the rancher agent you require (min 512M of ram [t2.nano])'
+
+VOLUME_SIZE:
+	@while [ -z "$$VOLUME_SIZE" ]; do \
+		read -r -p "Enter the VOLUME_SIZE (in GB) you wish to give to agents in this cluster [VOLUME_SIZE]: " VOLUME_SIZE; echo "$$VOLUME_SIZE">>VOLUME_SIZE; cat VOLUME_SIZE; \
+	done ;
 
 listinstances:
 	aws ec2 describe-instances > listinstances
@@ -115,14 +129,14 @@ serverDocker: serverList
 	@echo 'If you have multple servers be sure and configure them using the "High Availability" menu under admin in the rancher servers'
 	@echo 'Now is also the time to configure your environments if you would like to use kubernetes, Mesos, or Swarm instead of Cattle'
 
-agentsDocker: agentList
+agentsDocker: agentsList
 	$(eval TMP := $(shell mktemp -d --suffix=DOCKERTMP))
 	$(eval SSH_PORT := $(shell cat SSH_PORT))
 	$(eval AGENT_CMD := $(shell cat AGENT_CMD))
 	while read INSTANCE_ID IMAGE_ID PRIVATE_IP PUBLIC_IP HOSTNAME INSTANCE_TYPE KEY_NAME ; \
 		do \
 		echo "ssh -i ./$$KEY_NAME.pem -p$(SSH_PORT) rancher@$$PUBLIC_IP \"$(AGENT_CMD)\""; \
-		done < agentList > $(TMP)/agentbootstrap 
+		done < agentsList > $(TMP)/agentbootstrap 
 	-@cat $(TMP)/agentbootstrap
 	-/usr/bin/time parallel  --jobs 25 -- < $(TMP)/agentbootstrap
 	-@rm -Rf $(TMP)
@@ -134,7 +148,7 @@ install:
 
 clean:
 	-@rm workingList 2>/dev/null ;true
-	-@rm agentList 2>/dev/null ;true
+	-@rm agentsList 2>/dev/null ;true
 	-@rm serverList 2>/dev/null ;true
 	-@rm listinstances 2>/dev/null ;true
 	-@rm AGENT_CMD 2>/dev/null ;true
@@ -144,12 +158,12 @@ clean:
 	-@rm SERVER_SIZE 2>/dev/null ;true
 	-@rm SSH_KEY 2>/dev/null ;true
 
-agentList: workingList
+agentsList:
 	$(eval AMI_ID := $(shell cat AMI_ID))
 	$(eval AGENT_SIZE := $(shell cat AGENT_SIZE))
-	cat workingList | grep -v null | grep $(AMI_ID) | grep $(AGENT_SIZE) > agentList
+	cat workingList | grep -v null | grep $(AMI_ID) | grep $(AGENT_SIZE) > agentsList
 
-serverList: workingList
+serverList:
 	$(eval AMI_ID := $(shell cat AMI_ID))
 	$(eval SERVER_SIZE := $(shell cat SERVER_SIZE))
 	cat workingList | grep -v null | grep $(AMI_ID) | grep $(SERVER_SIZE) > serverList
@@ -166,3 +180,31 @@ regionsList:
 
 listRegions:
 	jq -r '.Regions[] | " \(.RegionName)\t http://\(.Endpoint) " ' regionsList
+
+west-1:
+	cp AMI_ID.west-1 AMI_ID
+	cp SSH_KEY.west-1 SSH_KEY
+	sed -i 's/^region.*/region = us-west-1/' ~/.aws/config
+
+west-2:
+	cp AMI_ID.west-2 AMI_ID
+	cp SSH_KEY.west-2 SSH_KEY
+	sed -i 's/^region.*/region = us-west-2/' ~/.aws/config
+
+east-2:
+	cp AMI_ID.east-2 AMI_ID
+	cp SSH_KEY.east-2 SSH_KEY
+	sed -i 's/^region.*/region = us-east-2/' ~/.aws/config
+
+efs: EFS.info
+
+EFS.info: AWS_PERF_MODE AWS_EFS_TOKEN
+	$(eval AWS_EFS_TOKEN := $(shell cat AWS_EFS_TOKEN))
+	$(eval AWS_PERF_MODE := $(shell cat AWS_PERF_MODE))
+	aws efs create-file-system --creation-token $(AWS_EFS_TOKEN) --performance-mode $(AWS_PERF_MODE) > EFS.info
+
+AWS_PERF_MODE:
+	echo 'generalPurpose' > AWS_PERF_MODE
+
+AWS_EFS_TOKEN:
+	dd if=/dev/urandom bs=1 count=32 2>/dev/null | base64 -w 0 | rev | cut -b 2- | rev > AWS_EFS_TOKEN
