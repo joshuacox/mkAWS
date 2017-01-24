@@ -158,12 +158,12 @@ clean:
 	-@rm SERVER_SIZE 2>/dev/null ;true
 	-@rm SSH_KEY 2>/dev/null ;true
 
-agentsList:
+agentsList: workingList
 	$(eval AMI_ID := $(shell cat AMI_ID))
 	$(eval AGENT_SIZE := $(shell cat AGENT_SIZE))
 	cat workingList | grep -v null | grep $(AMI_ID) | grep $(AGENT_SIZE) > agentsList
 
-serverList:
+serverList: workingList
 	$(eval AMI_ID := $(shell cat AMI_ID))
 	$(eval SERVER_SIZE := $(shell cat SERVER_SIZE))
 	cat workingList | grep -v null | grep $(AMI_ID) | grep $(SERVER_SIZE) > serverList
@@ -208,3 +208,14 @@ AWS_PERF_MODE:
 
 AWS_EFS_TOKEN:
 	dd if=/dev/urandom bs=1 count=32 2>/dev/null | base64 -w 0 | rev | cut -b 2- | rev > AWS_EFS_TOKEN
+
+enter:
+	$(eval SSH_PORT := $(shell cat SSH_PORT))
+	$(eval SSH_KEY := $(shell cat SSH_KEY))
+	$(eval TMP := $(shell mktemp -d --suffix=DOCKERTMP))
+	while read INSTANCE_ID IMAGE_ID PRIVATE_IP PUBLIC_IP HOSTNAME INSTANCE_TYPE KEY_NAME ; \
+		do \
+		echo "ssh -i $(SSH_KEY).pem -p$(SSH_PORT) rancher@$$PUBLIC_IP"; \
+		done < workingList > $(TMP)/working.sh
+	-bash $(TMP)/working.sh
+	@rm -Rf $(TMP)
