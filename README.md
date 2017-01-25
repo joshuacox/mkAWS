@@ -23,6 +23,14 @@ You will be prompted for your AWS key and a few other questions, at the end you 
 
 you now have a small cluster of [Rancher](http://rancher.com/rancher/)
 
+### Agent Cluster
+
+So you already have a rancher server setup and running and you merely want
+
+```
+make agentcluster
+```
+
 ### GNU Parallel
 
   O. Tange (2011): GNU Parallel - The Command-Line Power Tool,
